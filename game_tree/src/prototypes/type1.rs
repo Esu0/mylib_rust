@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use rand::{rngs::ThreadRng, Rng};
 
 trait Game {
