@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use rand::{rngs::ThreadRng, Rng};
 
 trait Game {
@@ -169,7 +171,12 @@ impl Strategy for MyGameRandomStrategy {
     }
 }
 
-fn main() {
+#[test]
+fn test_game() {
     let mut game = MyGame::new();
+    simulate_game(&mut game, MyGameGreedyStrategy);
+    println!();
+    println!();
+    game = MyGame::new();
     simulate_game(&mut game, MyGameRandomStrategy::default());
 }
