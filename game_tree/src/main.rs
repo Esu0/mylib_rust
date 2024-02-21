@@ -1,3 +1,5 @@
+use rand::{rngs::ThreadRng, Rng};
+
 trait Game {
     type Action;
     fn next(&mut self, action: Self::Action) -> bool;
@@ -139,7 +141,34 @@ impl Strategy for MyGameGreedyStrategy {
     }
 }
 
+struct MyGameRandomStrategy {
+    rng: ThreadRng,
+}
+
+impl Default for MyGameRandomStrategy {
+    fn default() -> Self {
+        Self {
+            rng: rand::thread_rng(),
+        }
+    }
+}
+
+impl Strategy for MyGameRandomStrategy {
+    type Game = MyGame;
+
+    fn next_action(&mut self, _game: &Self::Game) -> <Self::Game as Game>::Action {
+        use MyGameAction::*;
+        match self.rng.gen_range(0..4) {
+            0 => Up,
+            1 => Down,
+            2 => Left,
+            3 => Right,
+            _ => unreachable!(),
+        }
+    }
+}
+
 fn main() {
     let mut game = MyGame::new();
-    simulate_game(&mut game, MyGameGreedyStrategy);
+    simulate_game(&mut game, MyGameRandomStrategy::default());
 }
