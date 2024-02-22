@@ -1,4 +1,5 @@
-mod game;
+pub mod game;
+pub mod game2;
 
 use std::{array, marker::PhantomData};
 
@@ -69,19 +70,19 @@ trait Strategy {
 }
 
 trait StrategySet {
-    type Strategy: Strategy;
+    type Game: Game;
 
     fn get_mut(
         &mut self,
-        player: <<Self::Strategy as Strategy>::Game as Game>::Player,
-    ) -> &mut Self::Strategy;
+        player: <Self::Game as Game>::Player,
+    ) -> &mut dyn Strategy<Game = Self::Game>;
 }
 
-fn simulate_game<G: Game, S: Strategy<Game = G>>(
+fn simulate_game<G: Game>(
     game: G,
-    mut strategy: impl StrategySet<Strategy = S>,
+    mut strategy: impl StrategySet<Game = G>,
 ) {
-    let (mut gs, mut pss, p) = game.initial_state();
+    let (mut gs, mut pss, mut p) = game.initial_state();
     game.render(&gs, &pss, p);
     let mut next_action = strategy.get_mut(p).next_action(&game, &gs, pss.get(p));
     while let Some(next_player) = game.next(&mut gs, &mut pss, p, next_action) {
@@ -89,6 +90,7 @@ fn simulate_game<G: Game, S: Strategy<Game = G>>(
         next_action = strategy
             .get_mut(next_player)
             .next_action(&game, &gs, pss.get(next_player));
+        p = next_player;
     }
     game.render(&gs, &pss, p);
     game.render_result(&gs, &pss, p);
@@ -254,12 +256,12 @@ impl Strategy for MyGameRandomStrategy {
     }
 }
 impl<T: Strategy<Game = MyGame>> StrategySet for T {
-    type Strategy = T;
+    type Game = T::Game;
 
     fn get_mut(
         &mut self,
-        _player: <<Self::Strategy as Strategy>::Game as Game>::Player,
-    ) -> &mut Self::Strategy {
+        _player: <Self::Game as Game>::Player,
+    ) -> &mut dyn Strategy<Game = Self::Game> {
         self
     }
 }
