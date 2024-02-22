@@ -69,7 +69,10 @@ trait Strategy {
 trait StrategySet {
     type Strategy: Strategy;
 
-    fn get_mut(&mut self, player: <<Self::Strategy as Strategy>::Game as Game>::Player) -> &mut Self::Strategy;
+    fn get_mut(
+        &mut self,
+        player: <<Self::Strategy as Strategy>::Game as Game>::Player,
+    ) -> &mut Self::Strategy;
 }
 
 fn simulate_game<G: Game, S: Strategy<Game = G>>(
@@ -81,7 +84,9 @@ fn simulate_game<G: Game, S: Strategy<Game = G>>(
     let mut next_action = strategy.get_mut(p).next_action(&game, &gs, pss.get(p));
     while let Some(next_player) = game.next(&mut gs, &mut pss, p, next_action) {
         game.render(&gs, &pss, next_player);
-        next_action = strategy.get_mut(next_player).next_action(&game, &gs, pss.get(next_player));
+        next_action = strategy
+            .get_mut(next_player)
+            .next_action(&game, &gs, pss.get(next_player));
     }
     game.render(&gs, &pss, p);
     game.render_result(&gs, &pss, p);
@@ -110,12 +115,12 @@ impl Game for MyGame {
     }
 
     fn next(
-            &self,
-            global_state: &mut Self::GlobalState,
-            _player_state_set: &mut Self::PlayerStateSet,
-            _player: Self::Player,
-            action: Self::Action,
-        ) -> Option<Self::Player> {
+        &self,
+        global_state: &mut Self::GlobalState,
+        _player_state_set: &mut Self::PlayerStateSet,
+        _player: Self::Player,
+        action: Self::Action,
+    ) -> Option<Self::Player> {
         use MyGameAction::*;
         match action {
             Up => global_state.position.1 = global_state.position.1.saturating_sub(1),
@@ -123,7 +128,9 @@ impl Game for MyGame {
             Left => global_state.position.0 = global_state.position.0.saturating_sub(1),
             Right => global_state.position.0 = (global_state.position.0 + 1).min(4),
         };
-        let addtional_score = std::mem::take(&mut global_state.board[global_state.position.1][global_state.position.0]) as u32;
+        let addtional_score = std::mem::take(
+            &mut global_state.board[global_state.position.1][global_state.position.0],
+        ) as u32;
         global_state.score += addtional_score;
         global_state.leftover_moves -= 1;
         if global_state.leftover_moves == 0 {
@@ -138,20 +145,20 @@ impl Game for MyGame {
     }
 
     fn render(
-            &self,
-            global_state: &Self::GlobalState,
-            _players_state: &Self::PlayerStateSet,
-            _player: Self::Player,
-        ) {
+        &self,
+        global_state: &Self::GlobalState,
+        _players_state: &Self::PlayerStateSet,
+        _player: Self::Player,
+    ) {
         global_state.render();
     }
 
     fn render_result(
-            &self,
-            global_state: &Self::GlobalState,
-            _players_state: &Self::PlayerStateSet,
-            _player: Self::Player,
-        ) {
+        &self,
+        global_state: &Self::GlobalState,
+        _players_state: &Self::PlayerStateSet,
+        _player: Self::Player,
+    ) {
         println!("Game over! Your score is {}", global_state.score);
     }
 }
@@ -201,18 +208,22 @@ impl Strategy for MyGameGreedyStrategy {
     type Game = MyGame;
 
     fn next_action(
-            &mut self,
-            game: &Self::Game,
-            global_state: &<Self::Game as Game>::GlobalState,
-            _player_state: &<Self::Game as Game>::PlayerState,
-        ) -> <Self::Game as Game>::Action {
+        &mut self,
+        game: &Self::Game,
+        global_state: &<Self::Game as Game>::GlobalState,
+        _player_state: &<Self::Game as Game>::PlayerState,
+    ) -> <Self::Game as Game>::Action {
         let best = {
             use MyGameAction::*;
-            [Up, Down, Left, Right].into_iter().map(|action| {
-                let mut state = global_state.clone();
-                game.next(&mut state, &mut NoPlayerState::default(), (), action);
-                (state.score, action)
-            }).max_by_key(|x| x.0).unwrap_or_else(|| unreachable!())
+            [Up, Down, Left, Right]
+                .into_iter()
+                .map(|action| {
+                    let mut state = global_state.clone();
+                    game.next(&mut state, &mut NoPlayerState::default(), (), action);
+                    (state.score, action)
+                })
+                .max_by_key(|x| x.0)
+                .unwrap_or_else(|| unreachable!())
         };
         best.1
     }
@@ -230,11 +241,11 @@ impl Strategy for MyGameRandomStrategy {
     type Game = MyGame;
 
     fn next_action(
-            &mut self,
-            _game: &Self::Game,
-            _global_state: &<Self::Game as Game>::GlobalState,
-            _player_state: &<Self::Game as Game>::PlayerState,
-        ) -> <Self::Game as Game>::Action {
+        &mut self,
+        _game: &Self::Game,
+        _global_state: &<Self::Game as Game>::GlobalState,
+        _player_state: &<Self::Game as Game>::PlayerState,
+    ) -> <Self::Game as Game>::Action {
         use MyGameAction::*;
         let actions = [Up, Down, Left, Right];
         actions[self.0.gen_range(0usize..4)]
@@ -243,7 +254,10 @@ impl Strategy for MyGameRandomStrategy {
 impl<T: Strategy<Game = MyGame>> StrategySet for T {
     type Strategy = T;
 
-    fn get_mut(&mut self, _player: <<Self::Strategy as Strategy>::Game as Game>::Player) -> &mut Self::Strategy {
+    fn get_mut(
+        &mut self,
+        _player: <<Self::Strategy as Strategy>::Game as Game>::Player,
+    ) -> &mut Self::Strategy {
         self
     }
 }
@@ -254,11 +268,11 @@ impl Strategy for MyGameInputStrategy {
     type Game = MyGame;
 
     fn next_action(
-            &mut self,
-            _game: &Self::Game,
-            _global_state: &<Self::Game as Game>::GlobalState,
-            _player_state: &<Self::Game as Game>::PlayerState,
-        ) -> <Self::Game as Game>::Action {
+        &mut self,
+        _game: &Self::Game,
+        _global_state: &<Self::Game as Game>::GlobalState,
+        _player_state: &<Self::Game as Game>::PlayerState,
+    ) -> <Self::Game as Game>::Action {
         use MyGameAction::*;
         loop {
             let mut input = String::new();
@@ -272,7 +286,6 @@ impl Strategy for MyGameInputStrategy {
             }
         }
     }
-
 }
 #[test]
 fn test_game() {

@@ -8,7 +8,10 @@ trait Game {
     fn next(&self, state: &mut Self::State, action: Self::Action) -> bool;
     fn render(&self, state: &Self::State);
     fn render_result(&self, state: &Self::State);
-    fn split_state<'a>(&self, state: &'a Self::State) -> (&'a Self::GlobalState, &'a Self::PlayerState);
+    fn split_state<'a>(
+        &self,
+        state: &'a Self::State,
+    ) -> (&'a Self::GlobalState, &'a Self::PlayerState);
 }
 
 trait MultiPlayerGame {
@@ -30,8 +33,18 @@ trait MultiPlayerGame {
         action: Self::Action,
     ) -> Option<Self::Player>;
 
-    fn render(&self, global_state: &Self::GlobalState, players_state: &Self::PlayersState, player: Self::Player);
-    fn render_result(&self, global_state: &Self::GlobalState, players_state: &Self::PlayersState, player: Self::Player);
+    fn render(
+        &self,
+        global_state: &Self::GlobalState,
+        players_state: &Self::PlayersState,
+        player: Self::Player,
+    );
+    fn render_result(
+        &self,
+        global_state: &Self::GlobalState,
+        players_state: &Self::PlayersState,
+        player: Self::Player,
+    );
 
     fn players(&self) -> impl IntoIterator<Item = Self::Player>;
 }
@@ -71,7 +84,10 @@ impl<P: Clone, T: MultiPlayerGame<Player = P>> Game for T {
         }
     }
 
-    fn split_state<'a>(&self, state: &'a Self::State) -> (&'a Self::GlobalState, &'a Self::PlayerState) {
+    fn split_state<'a>(
+        &self,
+        state: &'a Self::State,
+    ) -> (&'a Self::GlobalState, &'a Self::PlayerState) {
         (&state.0, &state.1.get(state.2.clone()))
     }
 }
@@ -89,7 +105,10 @@ trait Strategy {
 trait StrategySet {
     type Strategy: Strategy;
 
-    fn get_mut(&mut self, player: <<Self::Strategy as Strategy>::Game as Game>::Player) -> &mut Self::Strategy;
+    fn get_mut(
+        &mut self,
+        player: <<Self::Strategy as Strategy>::Game as Game>::Player,
+    ) -> &mut Self::Strategy;
 }
 
 fn simulate_game<G: Game>(
