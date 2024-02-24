@@ -165,7 +165,9 @@ impl Strategy for RandomStrategy {
     }
 }
 
-impl<G: Game<Player = Player>, S1: Strategy<Game = G>, S2: Strategy<Game = G>> StrategySet for (S1, S2) {
+impl<G: Game<Player = Player>, S1: Strategy<Game = G>, S2: Strategy<Game = G>> StrategySet
+    for (S1, S2)
+{
     type Game = G;
 
     fn get_mut(

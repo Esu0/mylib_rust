@@ -78,10 +78,7 @@ trait StrategySet {
     ) -> &mut dyn Strategy<Game = Self::Game>;
 }
 
-fn simulate_game<G: Game>(
-    game: G,
-    mut strategy: impl StrategySet<Game = G>,
-) {
+fn simulate_game<G: Game>(game: G, mut strategy: impl StrategySet<Game = G>) {
     let (mut gs, mut pss, mut p) = game.initial_state();
     game.render(&gs, &pss, p);
     let mut next_action = strategy.get_mut(p).next_action(&game, &gs, pss.get(p));

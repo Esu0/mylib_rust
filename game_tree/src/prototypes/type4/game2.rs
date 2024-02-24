@@ -106,9 +106,12 @@ impl Strategy for SimpleStrategy {
         global_state: &<Self::Game as Game>::GlobalState,
         _player_state: &<Self::Game as Game>::PlayerState,
     ) -> <Self::Game as Game>::Action {
-        let (container, &chips) = global_state.containers.iter().enumerate().find(|&(_, &container)| {
-            container != 0
-        }).unwrap();
+        let (container, &chips) = global_state
+            .containers
+            .iter()
+            .enumerate()
+            .find(|&(_, &container)| container != 0)
+            .unwrap();
         Action {
             container,
             chips: chips.min(3),
@@ -127,7 +130,10 @@ impl Strategy for InputStrategy {
         global_state: &<Self::Game as Game>::GlobalState,
         _player_state: &<Self::Game as Game>::PlayerState,
     ) -> <Self::Game as Game>::Action {
-        println!("info: Xor sum {}", global_state.containers.iter().fold(0u32, |acc, &x| acc ^ x));
+        println!(
+            "info: Xor sum {}",
+            global_state.containers.iter().fold(0u32, |acc, &x| acc ^ x)
+        );
         let mut s = String::new();
         std::io::stdin().read_line(&mut s).unwrap();
         let mut iter = s.split_whitespace().map(|x| x.parse().unwrap());
