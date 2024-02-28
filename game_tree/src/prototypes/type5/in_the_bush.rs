@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use arrayvec::ArrayVec;
-use rand::Rng;
+use rand::{seq::SliceRandom, Rng};
 
 struct InTheBush {
     player_num: u8,
@@ -20,11 +20,66 @@ enum PersonTile {
     X2 = 10,
 }
 
+impl PersonTile {
+    fn all(player_num: u8) -> ArrayVec<Self, 9> {
+        if player_num == 3 {
+            [
+                Self::Two,
+                Self::Three,
+                Self::Four,
+                Self::Five,
+                Self::Six,
+                Self::Seven,
+                Self::Eight,
+            ]
+            .into_iter()
+            .collect()
+        } else if player_num == 4 {
+            [
+                Self::Two,
+                Self::Three,
+                Self::Four,
+                Self::Five,
+                Self::Six,
+                Self::Seven,
+                Self::Eight,
+                Self::X1,
+            ]
+            .into_iter()
+            .collect()
+        } else if player_num == 5 {
+            ArrayVec::from([
+                Self::Two,
+                Self::Three,
+                Self::Four,
+                Self::Five,
+                Self::Six,
+                Self::Seven,
+                Self::Eight,
+                Self::X1,
+                Self::X2,
+            ])
+        } else {
+            panic!("invalid player_num: {}", player_num);
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Suspect {
     One,
     Two,
     Three,
+}
+
+impl Suspect {
+    fn other(self) -> [Self; 2] {
+        match self {
+            Self::One => [Self::Two, Self::Three],
+            Self::Two => [Self::One, Self::Three],
+            Self::Three => [Self::One, Self::Two],
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -41,6 +96,36 @@ struct Board {
     suspect: [PersonTile; 3],
     dead: PersonTile,
     other: ArrayVec<PersonTile, 5>,
+}
+
+impl Board {
+    fn draw(game: &InTheBush) -> Self {
+        let mut tiles = PersonTile::all(game.player_num);
+        RNG.with_borrow_mut(|rng| {
+            tiles.shuffle(rng);
+        });
+        let mut iter = tiles.into_iter();
+        let suspect = [
+            iter.next().unwrap(),
+            iter.next().unwrap(),
+            iter.next().unwrap(),
+        ];
+        let dead = iter.next().unwrap();
+        let other = iter.collect();
+        Self {
+            suspect,
+            dead,
+            other,
+        }
+    }
+
+    fn get_tile_suspect(&self, suspect: Suspect) -> PersonTile {
+        match suspect {
+            Suspect::One => self.suspect[0],
+            Suspect::Two => self.suspect[1],
+            Suspect::Three => self.suspect[2],
+        }
+    }
 }
 
 struct PartialBoard {
@@ -68,6 +153,14 @@ impl PartialBoard {
             other: (0..game.player_num).map(|_| None).collect(),
         }
     }
+
+    fn set_tile_suspect(&mut self, suspect: Suspect, tile: PersonTile) {
+        match suspect {
+            Suspect::One => self.suspect[0] = Some(tile),
+            Suspect::Two => self.suspect[1] = Some(tile),
+            Suspect::Three => self.suspect[2] = Some(tile),
+        }
+    }
 }
 
 struct PlayerStateSet {
@@ -79,9 +172,11 @@ impl PlayerStateSet {
     fn initial(game: &InTheBush) -> Self {
         Self {
             board: None,
-            playerstates: (0..game.player_num).map(|_| PlayerState {
-                board: PartialBoard::unknown(game),
-            }).collect(),
+            playerstates: (0..game.player_num)
+                .map(|_| PlayerState {
+                    board: PartialBoard::unknown(game),
+                })
+                .collect(),
         }
     }
 }
@@ -150,14 +245,23 @@ impl super::Game for InTheBush {
                 let first = Player::random(self);
                 global_state.first_marker = Some(first);
                 global_state.phase = Phase::FirstOnTheScene;
-                // TODO: 盤面の抽選を行う
+                player_state_set.board = Some(Board::draw(self));
+                // TODO: 次の人にタイルを渡す(前の人のタイルを見る)操作を実装する
                 Some(first)
             }
             Phase::FirstOnTheScene => {
                 let Some(decision) = action else {
                     return Some(player);
                 };
-                todo!()
+                global_state.unseen_marker = Some(decision);
+                let board = player_state_set.board.as_ref().unwrap();
+                for suspect in decision.other() {
+                    player_state_set.playerstates[player.0 as usize]
+                        .board
+                        .set_tile_suspect(suspect, board.get_tile_suspect(suspect));
+                }
+                global_state.phase = Phase::Declare;
+                Some(player.next(self))
             }
             Phase::Declare => {
                 todo!()
